@@ -19,9 +19,8 @@ import {
   Steps,
   Typography,
 } from 'antd';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-import { getSpecificationsAPI, SpecItem } from '@/services/api/specifications';
 const { Sider, Content } = Layout;
 const { Step } = Steps;
 const { Title } = Typography;
@@ -32,9 +31,56 @@ const StepEditor = () => {
   const [specifications, setSpecifications] = useState<SpecItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  //const [streamData, setStreamData] = useState<string[]>([]);流式API数据
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
-  // 校验表单输入
+  useEffect(() => {
+    const newSocket = new WebSocket('ws://localhost:5000');
+    setSocket(newSocket);
+
+    newSocket.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    newSocket.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+
+    newSocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'specifications_response') {
+        if (data.error) {
+          message.error(data.error);
+        } else {
+          setSpecifications(data.data);
+          setCurrentStep((prev) => prev + 1);
+        }
+        setLoading(false);
+      } else if (data.type === 'update_response') {
+        if (data.error) {
+          message.error(data.error);
+        } else {
+          setSpecifications((prev) =>
+            prev.map((item) => (item.id === data.data.id ? data.data : item)),
+          );
+          message.success('更新成功');
+        }
+      } else if (data.type === 'delete_response') {
+        message.success(data.message);
+      } else if (data.type === 'add_response') {
+        if (data.error) {
+          message.error(data.error);
+        } else {
+          setSpecifications((prev) => [...prev, data.data]);
+          message.success('新增成功');
+        }
+      }
+    };
+
+    return () => {
+      newSocket.close();
+    };
+  }, []);
+
   const validateStep = () => {
     if (currentStep === 0 && !issue.trim()) {
       message.error('请输入需求后再继续');
@@ -44,46 +90,32 @@ const StepEditor = () => {
   };
 
   // 下一步按钮处理
-  const handleNext = async () => {
+  const handleNext = () => {
     if (!validateStep()) return;
 
     if (currentStep === 0) {
       setLoading(true); // 设置加载状态
-      try {
-        const res = await getSpecificationsAPI({ issue });
-        if (res.data) {
-          setSpecifications(res.data);
-          setCurrentStep((prev) => prev + 1); // 跳转到下一步
-        }
-      } catch (error) {
-        message.error('获取数据失败，请重试');
-      } finally {
-        setLoading(false); // 结束加载状态
-      }
+      socket?.send(JSON.stringify({ type: 'get_specifications', issue }));
     } else {
       setCurrentStep((prev) => prev + 1);
     }
   };
 
-  // 删除某条Spec
   const handleDeleteSpec = (id: number) => {
+    socket?.send(JSON.stringify({ type: 'delete_specification', id }));
     setSpecifications((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // 开始编辑
   const startEdit = (id: number) => {
     setEditingId(id);
   };
 
-  // 保存编辑内容
   const saveEdit = (id: number, value: string) => {
     if (!value.trim()) {
       message.error('内容不能为空');
       return;
     }
-    setSpecifications((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, content: value } : item)),
-    );
+    socket?.send(JSON.stringify({ type: 'update_specification', id, content: value }));
     setEditingId(null);
     // message.success('修改成功');
   };
