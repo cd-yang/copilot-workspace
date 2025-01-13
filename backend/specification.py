@@ -46,9 +46,28 @@ def get_specifications():
 
     else:
         abort(404)
-    
-    
 
+@app.route("/api/weapon_parameters", methods=['GET'])
+def get_weapon_parameters():
+    data = {
+        'data': [
+            {
+                "id": 1,
+                "name": "Weapon A",
+                "type": "Type 1",
+                "damage": 100,
+                "range": 50
+            },
+            {
+                "id": 2,
+                "name": "Weapon B",
+                "type": "Type 2",
+                "damage": 150,
+                "range": 70
+            }
+        ]
+    }
+    return make_response(jsonify(data), 200)
 
 if __name__ == "__main__":
     app.run()
