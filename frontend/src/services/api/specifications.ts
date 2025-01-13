@@ -23,32 +23,3 @@ export async function getSpecificationsAPI(
     ...(options || {}),
   });
 }
-
-export interface GetWeaponParametersParams {
-  weaponId: number;
-}
-export interface GetWeaponParametersResult {
-  data: WeaponParameter[];
-}
-export interface WeaponParameter {
-  id: number;
-  name: string;
-  type: string;
-  damage: number;
-  range: number;
-}
-
-/** 获取武器参数列表 GET /api/weapon_parameters */
-export async function getWeaponParametersAPI(
-  params: GetWeaponParametersParams,
-  options?: { [key: string]: any },
-) {
-  return request<GetWeaponParametersResult>('/api/weapon_parameters', {
-    method: 'GET',
-    params: params,
-    ...(options || {}),
-  });
-}
-
-
-

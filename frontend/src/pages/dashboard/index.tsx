@@ -32,7 +32,6 @@ const StepEditor = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [weaponParameters, setWeaponParameters] = useState<WeaponParameter[]>([]);
 
   useEffect(() => {
     const newSocket = new WebSocket('ws://localhost:5000');
@@ -74,14 +73,6 @@ const StepEditor = () => {
           setSpecifications((prev) => [...prev, data.data]);
           message.success('新增成功');
         }
-      } else if (data.type === 'weapon_parameters_response') {
-        if (data.error) {
-          message.error(data.error);
-        } else {
-          setWeaponParameters(data.data);
-          setCurrentStep((prev) => prev + 1);
-        }
-        setLoading(false);
       }
     };
 
@@ -105,8 +96,6 @@ const StepEditor = () => {
     if (currentStep === 0) {
       setLoading(true); // 设置加载状态
       socket?.send(JSON.stringify({ type: 'get_specifications', issue }));
-    } else if (currentStep === 2) {
-      handleWeaponParameters();
     } else {
       setCurrentStep((prev) => prev + 1);
     }
@@ -136,11 +125,6 @@ const StepEditor = () => {
     const newId = specifications.length ? specifications[specifications.length - 1].id + 1 : 1;
     setSpecifications((prev) => [...prev, { id: newId, content: '' }]);
     setEditingId(newId); // 自动进入新增项的编辑模式
-  };
-
-  const handleWeaponParameters = () => {
-    setLoading(true);
-    socket?.send(JSON.stringify({ type: 'get_weapon_parameters' }));
   };
 
   //TODO获取流式API数据
@@ -267,31 +251,7 @@ const StepEditor = () => {
       ),
     },
     {
-      title: 'Step 3: Weapon Parameters',
-      content: (
-        <List
-          dataSource={weaponParameters}
-          renderItem={(item) => (
-            <List.Item>
-              <List.Item.Meta
-                title={item.name}
-                description={`Type: ${item.type}, Damage: ${item.damage}, Range: ${item.range}`}
-              />
-            </List.Item>
-          )}
-        />
-      ),
-      icon: (
-        <Avatar
-          icon={<OrderedListOutlined />}
-          style={{
-            backgroundColor: '#87d068',
-          }}
-        />
-      ),
-    },
-    {
-      title: 'Step 4: Plan',
+      title: 'Step 3: Plan',
       content: (
         <>
           Plan
@@ -322,7 +282,7 @@ const StepEditor = () => {
       ),
     },
     {
-      title: 'Step 5: Implementation',
+      title: 'Step 4: Implementation',
       content: <>部署应用.....</>,
       icon: (
         <Avatar
