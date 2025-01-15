@@ -1,10 +1,9 @@
 import {
-  CrownOutlined,
   LoadingOutlined,
   MenuFoldOutlined,
   OrderedListOutlined,
   PlusOutlined,
-  UserOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import {
   Avatar,
@@ -28,10 +27,10 @@ const { Title } = Typography;
 
 const StepEditor = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [issue, setIssue] = useState<string>('');
+  const [issue, setIssue] = useState<string>('如何生成一个简单的 1v1 红蓝对抗场景？');
   const [specifications, setSpecifications] = useState<SpecItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>();
   //const [streamData, setStreamData] = useState<string[]>([]);流式API数据
 
   // 校验表单输入
@@ -50,7 +49,7 @@ const StepEditor = () => {
     if (currentStep === 0) {
       setLoading(true); // 设置加载状态
       try {
-        const res = await getSpecificationsAPI({ issue });
+        const res = await getSpecificationsAPI({ requirement: issue });
         if (res.data) {
           setSpecifications(res.data);
           setCurrentStep((prev) => prev + 1); // 跳转到下一步
@@ -140,7 +139,7 @@ const StepEditor = () => {
 
   const steps = [
     {
-      title: 'Step 1: Issue',
+      title: 'Step 1: 需求',
       content: (
         <Input placeholder="请输入需求" value={issue} onChange={(e) => setIssue(e.target.value)} />
       ),
@@ -154,7 +153,7 @@ const StepEditor = () => {
       ),
     },
     {
-      title: 'Step 2: Specification',
+      title: 'Step 2: 任务分解',
       content: (
         <>
           <List
@@ -186,10 +185,10 @@ const StepEditor = () => {
               >
                 {editingId === item.id ? (
                   <>
-                    <Input
+                    <Input.TextArea
                       defaultValue={item.content}
                       onPressEnter={(e) => saveEdit(item.id, (e.target as HTMLInputElement).value)}
-                      onBlur={(e) => saveEdit(item.id, (e.target as HTMLInputElement).value)}
+                      onBlur={(e) => saveEdit(item.id, e.target.value)}
                       autoFocus
                     />
                   </>
@@ -219,7 +218,7 @@ const StepEditor = () => {
       ),
     },
     {
-      title: 'Step 3: Plan',
+      title: 'Step 3: 代码方案',
       content: (
         <>
           Plan
@@ -249,24 +248,12 @@ const StepEditor = () => {
         />
       ),
     },
-    {
-      title: 'Step 4: Implementation',
-      content: <>部署应用.....</>,
-      icon: (
-        <Avatar
-          icon={<CrownOutlined />}
-          style={{
-            backgroundColor: '#87d068',
-          }}
-        />
-      ),
-    },
   ];
 
   return (
     <Layout style={{ height: '100vh' }}>
       {/* 左侧步骤条 */}
-      <Sider width={350} style={{ background: '#f0f2f5', padding: '16px' }}>
+      <Sider width={250} style={{ background: '#f0f2f5', padding: '16px' }}>
         <Steps
           direction="vertical"
           current={currentStep}
@@ -309,7 +296,7 @@ const StepEditor = () => {
                 ) : null
               }
             >
-              {'Next'}
+              {'下一步'}
             </Button>
           </Space>
         </Space>

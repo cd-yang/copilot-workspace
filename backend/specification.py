@@ -1,52 +1,53 @@
-from flask import Flask,make_response,jsonify,request,abort
+import time
+
+from flask import Flask, abort, jsonify, make_response, request
 from flask_cors import CORS
+
+from ollama_api import generate_response
+
 app = Flask(__name__)
-
-
 app.config['JSON_AS_ASCII'] = False
 
-@app.route("/api/hi", methods=['GET', 'POST'])
-def hi():
-    return "<p>Hi!</p>"
+# 临时使用数组来保存 CoT 的数据，前端采用轮询的方式来获取。后续应采用长连接来推送到前端
+task_list = []
 
-@app.route("/api/specifications", methods=['GET'])
-def get_specifications():
-    if request.args.get('issue'):
-        data = {
-            'data':
-                  [
-                {
-                    "id": 1,
-                    "content": "建议一：优化登录界面设计",
-                    'title': '登录界面'
-                },
-                {
-                    "id": 2,
-                    "content": "建议二：改进用户权限管理",
-                    'title': '用户权限'
-                },
-                {
-                    "id": 3,
-                    "content": "建议三：实现实时数据监控",
-                    'title': '数据监控'
-                },
-                {
-                    "id": 4,
-                    "content": "建议四：实现实时数据监控",
-                    'title': '数据监控'
-                },
-                {
-                    "id": 5,
-                    "content": "建议五：实现实时数据监控",
-                    'title': '数据监控'
-                }
-            ]
-            }
-        return make_response(jsonify(data), 200)
+def generate_task(user_query: str):    
+    if user_query:
+        for steps, total_thinking_time in generate_response(user_query):
+                for i, (title, content, thinking_time) in enumerate(steps):
+                    if title.startswith("Final Answer"):
+                        task_list.append({
+                            "id": time.time(),
+                            "title": title, 
+                            "content": content, 
+                            "thinking_time": thinking_time,
+                            "total_thinking_time": total_thinking_time,
+                            "is_final_answer": True
+                            })
+                    else:
+                        task = {
+                            "id": time.time(),
+                            "title": title, 
+                            "content": content, 
+                            "thinking_time": thinking_time,
+                            "is_final_answer": False
+                            }
+                        task_list.append(task)
+                        yield task
+            
+            # Only show total time when it's available at the end
+            # if total_thinking_time is not None:
+            #     time_container.markdown(f"**Total thinking time: {total_thinking_time:.2f} seconds**")
 
-    else:
-        abort(404)
+
+@app.route("/api/specifications", methods=['POST'])
+async def post_specifications():
+    requirement = request.get_json().get('requirement')
+    if not requirement:
+        return make_response(jsonify("未获取到参数"), 200)
     
+    for first_task in generate_task(requirement):
+        return make_response(jsonify({"data": [first_task]}), 200)
     
 
 
