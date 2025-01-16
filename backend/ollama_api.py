@@ -5,9 +5,11 @@ from ollama import Client
 
 ollama_client = Client(
     host='http://192.168.100.231:11434',
+    # host='http://192.168.100.201:11434',
 )
 # model="qwen2.5:72b"
-model="qwen2.5:32b"
+# model="qwen2.5:32b"
+model="qwen2.5-coder:32b"
 # model="qwen2.5-coder:32b-instruct-fp16"
 # model="qwq:32b-preview-fp16"
 # model="qwq:32b"
@@ -87,8 +89,8 @@ Example of a valid JSON response:
             {"role": "assistant", "content": "Thank you! I will now think step by step following my instructions, starting at the beginning after decomposing the problem."}
         ]
     
-    steps = []
-    step_count = 1
+    # steps = []
+    step_count = 0
     total_thinking_time = 0
     
     while True:
@@ -103,7 +105,7 @@ Example of a valid JSON response:
         if 'content' not in step_data:
             print(time.time(), '未生成有效 content，重试...')  # Retry if no valid content generated
             continue
-        steps.append((f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time))
+        # steps.append((f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time))
         
         messages.append({"role": "assistant", "content": json.dumps(step_data)})
         
@@ -113,7 +115,8 @@ Example of a valid JSON response:
         step_count += 1
 
         # Yield after each step for Streamlit to update
-        yield steps, None  # We're not yielding the total time until the end
+        # yield steps, None  # We're not yielding the total time until the end
+        yield f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time, None
 
     # Generate final answer
     if USE_CHINESE_PROMPT:
@@ -127,7 +130,7 @@ Example of a valid JSON response:
     thinking_time = end_time - start_time
     total_thinking_time += thinking_time
     
-    steps.append(("Final Answer", final_data['content'], thinking_time))
+    # steps.append(("Final Answer", final_data['content'], thinking_time))
 
-    yield steps, total_thinking_time
-
+    # yield steps, total_thinking_time
+    yield f"Final Answer: {final_data['title']}", final_data['content'], thinking_time, total_thinking_time

@@ -2,6 +2,7 @@ import { request } from '@umijs/max';
 
 export interface GetSpecificationsParams {
   requirement: string;
+  isFirstQuery: boolean;
 }
 export interface GetSpecificationsResult {
   data: SpecItem[];
@@ -10,6 +11,8 @@ export interface SpecItem {
   id: number;
   content: string;
   title?: string;
+  is_final_answer?: boolean;
+  thinking_time?: number;
 }
 
 /** 获取Spec列表 GET /api/specifications */

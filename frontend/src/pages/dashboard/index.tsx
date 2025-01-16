@@ -21,6 +21,7 @@ import {
 import { useState } from 'react';
 
 import { getSpecificationsAPI, SpecItem } from '@/services/api/specifications';
+import { waitTime } from '@/utils';
 const { Sider, Content } = Layout;
 const { Step } = Steps;
 const { Title } = Typography;
@@ -49,10 +50,18 @@ const StepEditor = () => {
     if (currentStep === 0) {
       setLoading(true); // 设置加载状态
       try {
-        const res = await getSpecificationsAPI({ requirement: issue });
-        if (res.data) {
-          setSpecifications(res.data);
-          setCurrentStep((prev) => prev + 1); // 跳转到下一步
+        let finalAnswerExists = false;
+        let isFirstQuery = true;
+        setCurrentStep((prev) => prev + 1); // 跳转到下一步
+        while (!finalAnswerExists) {
+          await waitTime(2000);
+          const res = await getSpecificationsAPI({ requirement: issue, isFirstQuery: isFirstQuery });
+          isFirstQuery = false;
+
+          if (res.data) {
+            setSpecifications(res.data);
+            if (res.data.some((item) => item.is_final_answer === true)) finalAnswerExists = true;
+          }
         }
       } catch (error) {
         message.error('获取数据失败，请重试');
@@ -139,9 +148,14 @@ const StepEditor = () => {
 
   const steps = [
     {
-      title: 'Step 1: 需求',
+      title: 'Step 1: 输入需求',
       content: (
-        <Input placeholder="请输入需求" value={issue} onChange={(e) => setIssue(e.target.value)} />
+        <Input.TextArea
+          placeholder="请输入需求"
+          value={issue}
+          onChange={(e) => setIssue(e.target.value)}
+          style={{ minHeight: '300px', maxHeight: '100%' }}
+        />
       ),
       icon: (
         <Avatar
@@ -172,7 +186,7 @@ const StepEditor = () => {
                   <Popconfirm
                     title="删除"
                     key="deleteConfirm"
-                    description="请确认是否删除该项Spec?"
+                    description="请确认是否删除该项任务?"
                     okText="是"
                     cancelText="否"
                     onConfirm={() => handleDeleteSpec(item.id)}
