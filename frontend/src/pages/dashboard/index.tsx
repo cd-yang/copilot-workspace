@@ -1,3 +1,5 @@
+import { getSpecificationsAPI, SpecItem } from '@/services/api/specifications';
+import { waitTime } from '@/utils';
 import {
   LoadingOutlined,
   MenuFoldOutlined,
@@ -5,9 +7,11 @@ import {
   PlusOutlined,
   UserOutlined
 } from '@ant-design/icons';
+import type { CollapseProps } from 'antd';
 import {
   Avatar,
   Button,
+  Collapse,
   Input,
   Layout,
   List,
@@ -20,11 +24,167 @@ import {
 } from 'antd';
 import { useState } from 'react';
 
-import { getSpecificationsAPI, SpecItem } from '@/services/api/specifications';
-import { waitTime } from '@/utils';
 const { Sider, Content } = Layout;
 const { Step } = Steps;
 const { Title } = Typography;
+
+
+const startText = `include_once scenarios/s1.txt
+`;
+
+const sce1Text = `include_once platforms/s34.txt
+include_once platforms/patriotMissile.txt
+
+platform red_1 RED_FIGHTER
+   side red
+   heading 90 deg
+   position 00:00:00.00n 01:10:00.00e  altitude 30000.00 ft
+   edit processor assessment
+      enemy_side    blue
+      enemy_type    BLUE_FIGHTER
+      friendly_type RED_FIGHTER
+      flight_id     202
+      id_flag       2
+      mission_task  SWEEP
+   end_processor
+end_platform
+`;
+
+const s34Text = `platform_type  LTE_FIGHTER  BRAWLER_TEST
+   icon f15c
+   include prdata/blue.txt
+
+   radar_signature 10dB_FuzzBall
+#script_variables
+#      no_tree = true;
+#end_script_variables
+   mover WSF_BRAWLER_MOVER
+      aero_file platforms/fxw/lte_fighter.fxw
+      update_time_tolerance 0.01 s
+   end_mover
+
+   fuel WSF_BRAWLER_FUEL
+      aero_file platforms/fxw/lte_fighter.fxw
+      initial_quantity_ratio 1.0
+   end_fuel
+
+   weapon fox3 MEDIUM_RANGE_RADAR_MISSILE # fox 3 (MRM)
+      quantity 6
+   end_weapon
+
+   weapon fox2 SHORT_RANGE_IR_MISSILE # fox 2 (SRM)
+      quantity 2
+   end_weapon
+
+   weapon fox1 SHORT_RANGE_IR_MISSILE # fox 1 (other)
+      quantity 0
+   end_weapon
+
+   weapon agm SHORT_RANGE_IR_MISSILE # air-to-ground missile, use SRM just to populate something
+      quantity 0
+   end_weapon
+
+   comm weapon_datalink WSF_COMM_TRANSCEIVER      // uplink to weapons
+      network_name weapons_subnet
+      internal_link data_mgr
+   end_comm
+
+   sensor rdr1 aesa
+      on
+      internal_link raw_data_mgr
+      internal_link data_mgr
+      ignore missile
+   end_sensor
+
+   sensor eyes WSF_GEOMETRIC_SENSOR
+      on
+      azimuth_field_of_view   -180.0 degrees  180.0 degrees
+      elevation_field_of_view -90.0  degrees  90.0  degrees
+      maximum_range           10 nmi
+      frame_time              1 sec
+      range_error_sigma       1000 ft
+      range_rate_error_sigma  50 m/s
+      azimuth_error_sigma     1 deg
+      elevation_error_sigma   1 deg
+      reports_location
+      reports_velocity
+      reports_range_rate
+      reports_range
+      reports_bearing
+      reports_elevation
+      reports_iff
+      internal_link raw_data_mgr
+      ignore_same_side
+      ignore missile
+   end_sensor
+
+    sensor rwr esm                       // 3
+      on
+      ignore IGNORE
+      ignore_same_side
+      internal_link raw_data_mgr
+      internal_link data_mgr
+   end_sensor
+
+   processor radar_track_cueing SENSOR_CUE_PROCESSOR
+      script_variables
+         mSourceSensorNames.Insert("*");
+         mCuedSensorName = "rdr1";
+         mTrackModeName = "TWS";
+      end_script_variables
+   end_processor
+
+   processor weapon_datalink_manager WEAPON_DL_MANAGER
+      script_variables
+         mUplinkSensorNames.PushBack("rdr1");
+      end_script_variables
+   end_processor
+end_platform_type
+`;
+
+const patriotMissileText = `platform_type BLUE_FIGHTER LTE_FIGHTER
+#   execute at_time 30 s absolute
+#      PLATFORM.DeletePlatform();
+#   end_execute
+   edit processor assessment
+      enemy_side    red
+      enemy_type    RED_FIGHTER
+      friendly_type BLUE_FIGHTER
+      flight_id     1
+   end_processor
+end_platform_type
+`;
+
+const items: CollapseProps['items'] = [
+  {
+    key: '1',
+    label: '/start.txt',
+    children: <Input.TextArea
+      style={{ height: '300px' }}
+      value={startText}></Input.TextArea>,
+  },
+  {
+    key: '2',
+    label: '/scenarios/s1.txt',
+    children: <Input.TextArea
+      style={{ height: '300px' }}
+      value={sce1Text}></Input.TextArea>,
+  },
+  {
+    key: '3',
+    label: '/platforms/s34.txt',
+    children: <Input.TextArea
+      style={{ height: '300px' }}
+      value={s34Text}></Input.TextArea>,
+  },
+  {
+    key: '4',
+    label: '/platforms/patriotMissile.txt',
+    children: <Input.TextArea
+      style={{ height: '300px' }}
+      value={patriotMissileText}></Input.TextArea>,
+  },
+];
 
 const StepEditor = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -68,9 +228,23 @@ const StepEditor = () => {
       } finally {
         setLoading(false); // 结束加载状态
       }
+    } else if (currentStep === 1) {
+      setLoading(true); // 设置加载状态
+      try {
+        setCurrentStep((prev) => prev + 1); // 跳转到下一步
+        await waitTime(2000);
+      } catch (error) {
+        message.error('获取数据失败，请重试');
+      } finally {
+        setLoading(false); // 结束加载状态
+      }
     } else {
       setCurrentStep((prev) => prev + 1);
     }
+  };
+
+  const handleConfirm = async () => {
+
   };
 
   // 删除某条Spec
@@ -102,49 +276,6 @@ const StepEditor = () => {
     setSpecifications((prev) => [...prev, { id: newId, content: '' }]);
     setEditingId(newId); // 自动进入新增项的编辑模式
   };
-
-  //TODO获取流式API数据
-  // const handleStreamData = async () => {
-  //     setLoading(true);
-  //     setStreamData([]); // 清空当前数据
-  //     try {
-  //         const response = await fetch('/api/generate');
-  //         const reader = response.body?.getReader();
-  //         if (!reader) throw new Error('流式读取失败');
-
-  //         const decoder = new TextDecoder('utf-8');
-  //         let done = false;
-  //         let buffer = ''; // 用于存储未完成的 JSON 数据
-
-  //         while (!done) {
-  //             const { value, done: readerDone } = await reader.read();
-  //             done = readerDone;
-  //             if (value) {
-  //                 // 解析流数据
-  //                 const chunk = decoder.decode(value, { stream: true });
-  //                 buffer += chunk; // 将新的数据拼接到 buffer 中
-
-  //                 // 按行分割，并解析完成的 JSON 行
-  //                 const lines = buffer.split('\n');
-  //                 buffer = lines.pop() || ''; // 最后一行可能是不完整的，留到下一轮处理
-
-  //                 lines.forEach((line) => {
-  //                     if (line.trim()) { // 过滤掉空行
-  //                         const item = JSON.parse(line); // 解析 JSON
-  //                         setStreamData((prev) => {
-  //                             return [...prev, item]; // 立即更新状态并渲染新数据
-  //                         });
-  //                     }
-  //                 });
-  //             }
-  //         }
-  //     } catch (error) {
-  //         console.error('加载流式数据失败:', error);
-  //         message.error('加载流式数据失败');
-  //     } finally {
-  //         setLoading(false);
-  //     }
-  // };
 
   const steps = [
     {
@@ -235,22 +366,9 @@ const StepEditor = () => {
       title: 'Step 3: 代码方案',
       content: (
         <>
-          Plan
-          {/* <Button
-                        type="primary"
-                        onClick={handleStreamData}
-                        loading={loading}
-                        icon={<PlusOutlined />}
-                    >
-                        加载流式数据
-                    </Button>
-                    <List
-                        dataSource={streamData}
-                        renderItem={(item, index) => (
-                            <List.Item key={index}>{item.text}</List.Item>
-                        )}
-                        style={{ marginTop: 16 }}
-                    /> */}
+          <Collapse items={items} defaultActiveKey={['1']}
+          //  onChange={onChange}
+          />
         </>
       ),
       icon: (
@@ -291,27 +409,37 @@ const StepEditor = () => {
 
           {/* 控制按钮 */}
           <Space style={{ marginTop: 16 }}>
-            <Button
-              type="primary"
-              disabled={currentStep === steps.length - 1 || loading}
-              onClick={handleNext}
-              icon={
-                loading ? (
-                  <Spin
-                    indicator={
-                      <LoadingOutlined
-                        style={{
-                          fontSize: 14,
-                        }}
-                        spin
-                      />
-                    }
-                  />
-                ) : null
-              }
-            >
-              {'下一步'}
-            </Button>
+            {currentStep !== steps.length - 1 &&
+              <Button
+                type="primary"
+                disabled={currentStep === steps.length - 1 || loading}
+                onClick={handleNext}
+                icon={
+                  loading ? (
+                    <Spin
+                      indicator={
+                        <LoadingOutlined
+                          style={{
+                            fontSize: 14,
+                          }}
+                          spin
+                        />
+                      }
+                    />
+                  ) : null
+                }
+              >
+                {'下一步'}
+              </Button>
+            }
+            {currentStep === steps.length - 1 &&
+              <Button
+                type="primary"
+                onClick={handleConfirm}
+              >
+                {'确认方案，生成代码'}
+              </Button>
+            }
           </Space>
         </Space>
       </Content>
