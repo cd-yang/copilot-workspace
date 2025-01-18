@@ -4,8 +4,8 @@ import time
 from ollama import Client
 
 ollama_client = Client(
-    # host='http://192.168.100.231:11434',
-    host='http://192.168.100.201:11434',
+    host='http://192.168.100.231:11434',
+    # host='http://192.168.100.201:11434',
 )
 # model="qwen2.5:72b"
 # model="qwen2.5:32b"

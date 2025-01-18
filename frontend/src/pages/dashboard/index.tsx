@@ -1,4 +1,4 @@
-import { getSpecificationsAPI, SpecItem } from '@/services/api/specifications';
+import { generateCodePlan, getSpecificationsAPI, PlanItem, SpecItem } from '@/services/api/specifications';
 import { waitTime } from '@/utils';
 import {
   LoadingOutlined,
@@ -7,7 +7,6 @@ import {
   PlusOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import type { CollapseProps } from 'antd';
 import {
   Avatar,
   Button,
@@ -155,41 +154,30 @@ const patriotMissileText = `platform_type BLUE_FIGHTER LTE_FIGHTER
 end_platform_type
 `;
 
-const items: CollapseProps['items'] = [
+const testPlanItems: PlanItem[] = [
   {
-    key: '1',
-    label: '/start.txt',
-    children: <Input.TextArea
-      style={{ height: '300px' }}
-      value={startText}></Input.TextArea>,
+    fileName: '/start.txt',
+    content: startText,
   },
   {
-    key: '2',
-    label: '/scenarios/s1.txt',
-    children: <Input.TextArea
-      style={{ height: '300px' }}
-      value={sce1Text}></Input.TextArea>,
+    fileName: '/scenarios/s1.txt',
+    content: sce1Text,
   },
   {
-    key: '3',
-    label: '/platforms/s34.txt',
-    children: <Input.TextArea
-      style={{ height: '300px' }}
-      value={s34Text}></Input.TextArea>,
+    fileName: '/platforms/s34.txt',
+    content: s34Text,
   },
   {
-    key: '4',
-    label: '/platforms/patriotMissile.txt',
-    children: <Input.TextArea
-      style={{ height: '300px' }}
-      value={patriotMissileText}></Input.TextArea>,
-  },
+    fileName: '/platforms/patriotMissile.txt',
+    content: patriotMissileText,
+  }
 ];
 
 const StepEditor = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [issue, setIssue] = useState<string>('如何生成一个简单的 1v1 红蓝对抗场景？');
   const [specifications, setSpecifications] = useState<SpecItem[]>([]);
+  const [codePlans, setCodePlans] = useState<PlanItem[]>(testPlanItems);
   const [loading, setLoading] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<number | null>();
   //const [streamData, setStreamData] = useState<string[]>([]);流式API数据
@@ -232,7 +220,22 @@ const StepEditor = () => {
       setLoading(true); // 设置加载状态
       try {
         setCurrentStep((prev) => prev + 1); // 跳转到下一步
-        await waitTime(2000);
+        let finalPlanExists = false;
+        let isFirstQuery = true;
+        while (!finalPlanExists) {
+          await waitTime(2000);
+          const res = await generateCodePlan({
+            originRequirement: issue,
+            taskDetails: specifications.map(s => s.content),
+            isFirstQuery: isFirstQuery
+          });
+          isFirstQuery = false;
+
+          if (res.data) {
+            setCodePlans(res.data);
+            if (res.data.some((item) => item.isLastFile === true)) finalPlanExists = true;
+          }
+        }
       } catch (error) {
         message.error('获取数据失败，请重试');
       } finally {
@@ -366,7 +369,16 @@ const StepEditor = () => {
       title: 'Step 3: 代码方案',
       content: (
         <>
-          <Collapse items={items} defaultActiveKey={['1']}
+          <Collapse items={codePlans.map(n =>
+          ({
+            key: n.fileName,
+            label: n.fileName,
+            children: <Input.TextArea
+              style={{ height: '300px' }}
+              value={n.content}></Input.TextArea>,
+          })
+          )}
+          // defaultActiveKey={['1']}
           //  onChange={onChange}
           />
         </>

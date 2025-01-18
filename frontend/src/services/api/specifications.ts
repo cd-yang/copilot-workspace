@@ -1,10 +1,10 @@
 import { request } from '@umijs/max';
 
-export interface GetSpecificationsParams {
+interface GetSpecificationsParams {
   requirement: string;
   isFirstQuery: boolean;
 }
-export interface GetSpecificationsResult {
+interface GetSpecificationsResult {
   data: SpecItem[];
 }
 export interface SpecItem {
@@ -23,6 +23,33 @@ export async function getSpecificationsAPI(
   return request<GetSpecificationsResult>('/api/specifications', {
     // method: 'GET',
     // params: params,
+    method: 'POST',
+    data: params,
+    ...(options || {}),
+  });
+}
+
+interface GenerateCodePlanParams {
+  originRequirement: string;
+  taskDetails: string[];
+  isFirstQuery: boolean;
+}
+
+interface GenerateCodePlanResult {
+  data: PlanItem[];
+}
+
+export interface PlanItem {
+  fileName: string;
+  content: string;
+  isLastFile?: boolean;
+}
+
+export async function generateCodePlan(
+  params: GenerateCodePlanParams,
+  options?: { [key: string]: any; },
+) {
+  return request<GenerateCodePlanResult>('/api/codePlan', {
     method: 'POST',
     data: params,
     ...(options || {}),
