@@ -2,11 +2,10 @@ import threading
 import time
 from typing import List
 
-from flask import Flask, abort, jsonify, make_response, request
-from flask_cors import CORS
+from flask import Flask, jsonify, make_response, request
 
-from ollama_api import generate_response
-from vllm_api import generate_code_from_task
+from step_1_task import generate_task_response
+from step_2_code_plan import generate_code_from_task
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -23,7 +22,7 @@ def generate_task(user_query: str):
     
     # for steps, total_thinking_time in generate_response(user_query):
     #     for i, (title, content, thinking_time) in enumerate(steps):
-    for title, content, thinking_time, total_thinking_time in generate_response(user_query):
+    for title, content, thinking_time, total_thinking_time in generate_task_response(user_query):
         if title.startswith("Final Answer"):
             task = {
                 "id": time.time(),
@@ -80,12 +79,7 @@ def generate_code_plan(origin_requirement: str, task_details: List[str]):
         print("未获取到参数 task_details")
         return
     
-    for file_name, content, is_last_file in generate_code_from_task(origin_requirement, task_details):
-        code_plan = {
-            "fileName": file_name, 
-            "content": content, 
-            "isLastFile": is_last_file,
-            }
+    for code_plan in generate_code_from_task(origin_requirement, task_details):
         code_plans.append(code_plan)
         print(f"生成了 code_plan: {code_plan}")
 

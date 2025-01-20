@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { generateCodePlan, getSpecificationsAPI, PlanItem, SpecItem } from '@/services/api/specifications';
 import { waitTime } from '@/utils';
 import {
@@ -21,7 +22,7 @@ import {
   Steps,
   Typography,
 } from 'antd';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const { Sider, Content } = Layout;
 const { Step } = Steps;
@@ -155,22 +156,22 @@ end_platform_type
 `;
 
 const testPlanItems: PlanItem[] = [
-  {
-    fileName: '/start.txt',
-    content: startText,
-  },
-  {
-    fileName: '/scenarios/s1.txt',
-    content: sce1Text,
-  },
-  {
-    fileName: '/platforms/s34.txt',
-    content: s34Text,
-  },
-  {
-    fileName: '/platforms/patriotMissile.txt',
-    content: patriotMissileText,
-  }
+  // {
+  //   fileName: '/start.txt',
+  //   content: startText,
+  // },
+  // {
+  //   fileName: '/scenarios/s1.txt',
+  //   content: sce1Text,
+  // },
+  // {
+  //   fileName: '/platforms/s34.txt',
+  //   content: s34Text,
+  // },
+  // {
+  //   fileName: '/platforms/patriotMissile.txt',
+  //   content: patriotMissileText,
+  // }
 ];
 
 const StepEditor = () => {
@@ -192,7 +193,7 @@ const StepEditor = () => {
   };
 
   // 下一步按钮处理
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (!validateStep()) return;
 
     if (currentStep === 0) {
@@ -202,7 +203,6 @@ const StepEditor = () => {
         let isFirstQuery = true;
         setCurrentStep((prev) => prev + 1); // 跳转到下一步
         while (!finalAnswerExists) {
-          await waitTime(2000);
           const res = await getSpecificationsAPI({ requirement: issue, isFirstQuery: isFirstQuery });
           isFirstQuery = false;
 
@@ -210,6 +210,7 @@ const StepEditor = () => {
             setSpecifications(res.data);
             if (res.data.some((item) => item.is_final_answer === true)) finalAnswerExists = true;
           }
+          await waitTime(2000);
         }
       } catch (error) {
         message.error('获取数据失败，请重试');
@@ -219,6 +220,7 @@ const StepEditor = () => {
     } else if (currentStep === 1) {
       setLoading(true); // 设置加载状态
       try {
+        setCodePlans([]);
         setCurrentStep((prev) => prev + 1); // 跳转到下一步
         let finalPlanExists = false;
         let isFirstQuery = true;
@@ -244,24 +246,24 @@ const StepEditor = () => {
     } else {
       setCurrentStep((prev) => prev + 1);
     }
-  };
+  }, [specifications]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
 
-  };
+  }, []);
 
   // 删除某条Spec
-  const handleDeleteSpec = (id: number) => {
+  const handleDeleteSpec = useCallback((id: number) => {
     setSpecifications((prev) => prev.filter((item) => item.id !== id));
-  };
+  }, []);
 
   // 开始编辑
-  const startEdit = (id: number) => {
+  const startEdit = useCallback((id: number) => {
     setEditingId(id);
-  };
+  }, []);
 
   // 保存编辑内容
-  const saveEdit = (id: number, value: string) => {
+  const saveEdit = useCallback((id: number, value: string) => {
     if (!value.trim()) {
       message.error('内容不能为空');
       return;
@@ -271,14 +273,15 @@ const StepEditor = () => {
     );
     setEditingId(null);
     // message.success('修改成功');
-  };
+  }, []);
+
 
   // 新增条目
-  const handleAddSpec = () => {
+  const handleAddSpec = useCallback(() => {
     const newId = specifications.length ? specifications[specifications.length - 1].id + 1 : 1;
     setSpecifications((prev) => [...prev, { id: newId, content: '' }]);
     setEditingId(newId); // 自动进入新增项的编辑模式
-  };
+  }, [specifications]);
 
   const steps = [
     {

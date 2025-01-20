@@ -39,9 +39,19 @@ interface GenerateCodePlanResult {
   data: PlanItem[];
 }
 
+enum CodeType {
+  START = "start",
+  PLATFORM = "platform",
+  SCENARIO = "scenario",
+  WEAPON = "weapon",
+  PROCESSOR = "processor",
+  SENSOR = "sensor"
+}
+
 export interface PlanItem {
   fileName: string;
   content: string;
+  type: CodeType;
   isLastFile?: boolean;
 }
 
