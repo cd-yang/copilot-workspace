@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { generateCodePlan, getSpecificationsAPI, PlanItem, SpecItem } from '@/services/api/specifications';
+import { CodeType, generateCodePlan, getSpecificationsAPI, PlanItem, SpecItem } from '@/services/api/specifications';
 import { waitTime } from '@/utils';
 import {
   LoadingOutlined,
@@ -22,7 +22,10 @@ import {
   Steps,
   Typography,
 } from 'antd';
+import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 import { useCallback, useState } from 'react';
+
 
 const { Sider, Content } = Layout;
 const { Step } = Steps;
@@ -246,11 +249,18 @@ const StepEditor = () => {
     } else {
       setCurrentStep((prev) => prev + 1);
     }
-  }, [specifications]);
+  }, [issue, specifications]);
 
   const handleConfirm = useCallback(async () => {
+    const zip = new JSZip();
+    codePlans.forEach(plan => {
+      zip.file(getFileRelativePath(plan), plan.content);
+    });
 
-  }, []);
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, 'afsimProject.zip');
+    message.success('代码方案已打包下载');
+  }, [codePlans]);
 
   // 删除某条Spec
   const handleDeleteSpec = useCallback((id: number) => {
@@ -451,6 +461,7 @@ const StepEditor = () => {
               <Button
                 type="primary"
                 onClick={handleConfirm}
+                loading={loading}
               >
                 {'确认方案，生成代码'}
               </Button>
@@ -463,3 +474,22 @@ const StepEditor = () => {
 };
 
 export default StepEditor;
+
+function getFileRelativePath(planItem: PlanItem) {
+  switch (planItem.type) {
+    case CodeType.START:
+      return planItem.fileName;
+    case CodeType.PLATFORM:
+      return `platforms/${planItem.fileName}`;
+    case CodeType.SCENARIO:
+      return `scenarios/${planItem.fileName}`;
+    case CodeType.WEAPON:
+      return `weapons/${planItem.fileName}`;
+    case CodeType.PROCESSOR:
+      return `processors/${planItem.fileName}`;
+    case CodeType.SENSOR:
+      return `sensors/${planItem.fileName}`;
+    default:
+      return '';
+  }
+}

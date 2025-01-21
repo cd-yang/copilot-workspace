@@ -31,7 +31,7 @@ def generate_code_from_task(origin_requirement, task_details):
     for platform in platforms:
         code = make_code_gen_call([
             SystemMessage("You are an expert AFSIM code assistant. Generate code for platform_type: " + platform),
-            HumanMessage(origin_requirement)
+            HumanMessage(f"""{origin_requirement}""")
         ])
         yield {
             "fileName": f"{platform}.txt",
@@ -43,13 +43,24 @@ def generate_code_from_task(origin_requirement, task_details):
     code = make_code_gen_call([
         SystemMessage(f"""You are an expert AFSIM code assistant. Generate code for the following scenario which best describe the requirement. 
 The scenario should include the platform(s): {",".join(platforms)}.
-do not generate any platform_type code, just the platform code
 """),
-        HumanMessage(origin_requirement)
+        HumanMessage(f"""
+the scenario is as follows:
+```
+{origin_requirement}
+```
+please generate the code for the scenario which includes the platform(s): {",".join(platforms)}
+do not generate any platform_type code, just the platform code.
+""")
     ])
+
+    platform_include_content = "\n".join([f"include_once platforms/{platform}.txt" for platform in platforms])
     yield {
         "fileName": "scenario.txt",
-        "content": code.content,
+        "content": f"""{platform_include_content}
+
+{code.content}
+""",
         "type": CodeType.SCENARIO.value,
         "isLastFile": False
     }

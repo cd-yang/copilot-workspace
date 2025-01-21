@@ -39,7 +39,7 @@ interface GenerateCodePlanResult {
   data: PlanItem[];
 }
 
-enum CodeType {
+export enum CodeType {
   START = "start",
   PLATFORM = "platform",
   SCENARIO = "scenario",
