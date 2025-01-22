@@ -195,59 +195,67 @@ const StepEditor = () => {
     return true;
   };
 
+  const decomposeTask = async () => {
+    setLoading(true); // 设置加载状态
+    try {
+      let finalAnswerExists = false;
+      let isFirstQuery = true;
+      while (!finalAnswerExists) {
+        const res = await getSpecificationsAPI({ requirement: issue, isFirstQuery: isFirstQuery });
+        isFirstQuery = false;
+
+        if (res.data) {
+          setSpecifications(res.data);
+          if (res.data.some((item) => item.is_final_answer === true)) finalAnswerExists = true;
+        }
+        await waitTime(2000);
+      }
+    } catch (error) {
+      message.error('获取数据失败，请重试');
+    } finally {
+      setLoading(false); // 结束加载状态
+    }
+  };
+
+  const generatePlan = async () => {
+    setLoading(true); // 设置加载状态
+    try {
+      setCodePlans([]);
+      let finalPlanExists = false;
+      let isFirstQuery = true;
+      while (!finalPlanExists) {
+        await waitTime(2000);
+        const res = await generateCodePlan({
+          originRequirement: issue,
+          taskDetails: specifications.map(s => s.content),
+          isFirstQuery: isFirstQuery
+        });
+        isFirstQuery = false;
+
+        if (res.data) {
+          setCodePlans(res.data);
+          if (res.data.some((item) => item.isLastFile === true)) finalPlanExists = true;
+        }
+      }
+    } catch (error) {
+      message.error('获取数据失败，请重试');
+    } finally {
+      setLoading(false); // 结束加载状态
+    }
+  };
+
   // 下一步按钮处理
   const handleNext = useCallback(async () => {
     if (!validateStep()) return;
 
     if (currentStep === 0) {
-      setLoading(true); // 设置加载状态
-      try {
-        let finalAnswerExists = false;
-        let isFirstQuery = true;
-        setCurrentStep((prev) => prev + 1); // 跳转到下一步
-        while (!finalAnswerExists) {
-          const res = await getSpecificationsAPI({ requirement: issue, isFirstQuery: isFirstQuery });
-          isFirstQuery = false;
-
-          if (res.data) {
-            setSpecifications(res.data);
-            if (res.data.some((item) => item.is_final_answer === true)) finalAnswerExists = true;
-          }
-          await waitTime(2000);
-        }
-      } catch (error) {
-        message.error('获取数据失败，请重试');
-      } finally {
-        setLoading(false); // 结束加载状态
-      }
+      setCurrentStep((prev) => prev + 1); // 跳转到下一步
+      decomposeTask();
     } else if (currentStep === 1) {
-      setLoading(true); // 设置加载状态
-      try {
-        setCodePlans([]);
-        setCurrentStep((prev) => prev + 1); // 跳转到下一步
-        let finalPlanExists = false;
-        let isFirstQuery = true;
-        while (!finalPlanExists) {
-          await waitTime(2000);
-          const res = await generateCodePlan({
-            originRequirement: issue,
-            taskDetails: specifications.map(s => s.content),
-            isFirstQuery: isFirstQuery
-          });
-          isFirstQuery = false;
-
-          if (res.data) {
-            setCodePlans(res.data);
-            if (res.data.some((item) => item.isLastFile === true)) finalPlanExists = true;
-          }
-        }
-      } catch (error) {
-        message.error('获取数据失败，请重试');
-      } finally {
-        setLoading(false); // 结束加载状态
-      }
+      setCurrentStep((prev) => prev + 1); // 跳转到下一步
+      generatePlan();
     } else {
-      setCurrentStep((prev) => prev + 1);
+      // setCurrentStep((prev) => prev + 1);
     }
   }, [issue, specifications]);
 
@@ -458,13 +466,20 @@ const StepEditor = () => {
               </Button>
             }
             {currentStep === steps.length - 1 &&
-              <Button
-                type="primary"
-                onClick={handleConfirm}
-                loading={loading}
-              >
-                {'确认方案，生成代码'}
-              </Button>
+              <>
+                <Button type="dashed"
+                  loading={loading}
+                  onClick={() => generatePlan()}>
+                  重新生成
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={handleConfirm}
+                  loading={loading}
+                >
+                  {'确认方案，下载代码'}
+                </Button>
+              </>
             }
           </Space>
         </Space>

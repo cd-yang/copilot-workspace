@@ -17,21 +17,32 @@ class CodeType(Enum):
 def generate_code_from_task(origin_requirement, task_details):
     # step 1: 提取出 platform
     platforms = make_reasoning_call([
-         {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出有多少的 platform
+         {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出有多少的武器或者装备（包括但不限于飞机、舰船、导弹、卫星、车）
 有效 JSON 响应的示例：
 ```json
 {
-"platforms"：["redPlane1", "blueTank2", "Su-34", "patriot"]
+"platforms"：["redPlane1", "blueTank2"]
 }```
 """},
         {"role": "user", "content": origin_requirement}
         ])
     platforms = platforms.get("platforms", [])
+    # if platforms contains space, replace it with underscore
+    platforms = [platform.replace(" ", "_") for platform in platforms]
+    print(f"提取到 platforms: {platforms}")
+
     # step 2: 生成 platforms 代码
+    # todo: 补充装备数据： 简氏数据库/源启数据库
     for platform in platforms:
         code = make_code_gen_call([
-            SystemMessage("You are an expert AFSIM code assistant. Generate code for platform_type: " + platform),
-            HumanMessage(f"""{origin_requirement}""")
+            SystemMessage(f"""You are an expert AFSIM code assistant. Generate code for platform_type """),
+            HumanMessage(f"""target platform_type: {platform}
+description:
+```
+{origin_requirement}
+```
+complete the code for the platform_type {platform}"""
+) # TODO: 这里需要替换成 platform 的描述
         ])
         yield {
             "fileName": f"{platform}.txt",
@@ -39,7 +50,29 @@ def generate_code_from_task(origin_requirement, task_details):
             "type": CodeType.PLATFORM.value,
             "isLastFile": False
         }
+    
     # step 3: 生成 scenario 代码
+    # todo: 经纬度坐标通过接口查询，agent 计算经纬范围等
+    # 先提炼场景内容
+    scenario = make_reasoning_call([
+         {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出当前场景的描述
+有效 JSON 响应的示例：
+```json
+{
+"scenario"："场景包含了两架飞机，一架红色飞机和一架蓝色飞机，红色飞机在蓝色飞机的西侧，距离蓝色飞机100公里，初始坐标为(0, 0)，速度为1000千米/小时，蓝色飞机在红色飞机的东侧，距离红色飞机100公里，初始坐标为(100, 0)，速度为1000千米/小时。"
+}```
+"""},
+        {"role": "user", "content": f"""场景描述：
+```
+{origin_requirement}
+```
+场景中已知包含的平台有：{",".join(platforms)}
+"""}
+        ])
+    scenario = scenario.get("scenario", [])
+    print(f"提取到 scenario: {scenario}")
+
+
     code = make_code_gen_call([
         SystemMessage(f"""You are an expert AFSIM code assistant. Generate code for the following scenario which best describe the requirement. 
 The scenario should include the platform(s): {",".join(platforms)}.
@@ -47,7 +80,7 @@ The scenario should include the platform(s): {",".join(platforms)}.
         HumanMessage(f"""
 the scenario is as follows:
 ```
-{origin_requirement}
+{scenario}
 ```
 please generate the code for the scenario which includes the platform(s): {",".join(platforms)}
 do not generate any platform_type code, just the platform code.
