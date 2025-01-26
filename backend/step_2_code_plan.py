@@ -34,15 +34,34 @@ def generate_code_from_task(origin_requirement, task_details):
     # step 2: 生成 platforms 代码
     # todo: 补充装备数据： 简氏数据库/源启数据库
     for platform in platforms:
+            # 先提炼场景内容
+        platform_scenario = make_reasoning_call([
+            {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式从当前场景的描述中提取出平台的相关描述
+    有效 JSON 响应的示例：
+    ```json
+    {
+    "platform_scenario"："红方飞机正在执行某任务，遇到了蓝方飞机并产生了近距离格斗"
+    }```
+    """},
+            {"role": "user", "content": f"""场景描述：
+    ```
+    {origin_requirement}
+    ```
+    请提炼出场景中关于{platform} 的描述
+    """}
+            ])
+        platform_scenario = platform_scenario.get("platform_scenario", "")
+        print(f"提取到 platform_scenario: {platform_scenario}")
+
         code = make_code_gen_call([
             SystemMessage(f"""You are an expert AFSIM code assistant. Generate code for platform_type """),
             HumanMessage(f"""target platform_type: {platform}
 description:
 ```
-{origin_requirement}
+{platform_scenario}
 ```
 complete the code for the platform_type {platform}"""
-) # TODO: 这里需要替换成 platform 的描述
+)
         ])
         yield {
             "fileName": f"{platform}.txt",
@@ -69,7 +88,7 @@ complete the code for the platform_type {platform}"""
 场景中已知包含的平台有：{",".join(platforms)}
 """}
         ])
-    scenario = scenario.get("scenario", [])
+    scenario = scenario.get("scenario", "")
     print(f"提取到 scenario: {scenario}")
 
 
