@@ -27,6 +27,25 @@ import JSZip from 'jszip';
 import { useCallback, useState } from 'react';
 
 
+function getFileRelativePath(planItem: PlanItem) {
+  switch (planItem.type) {
+    case CodeType.START:
+      return planItem.fileName;
+    case CodeType.PLATFORM:
+      return `platforms/${planItem.fileName}`;
+    case CodeType.SCENARIO:
+      return `scenarios/${planItem.fileName}`;
+    case CodeType.WEAPON:
+      return `weapons/${planItem.fileName}`;
+    case CodeType.PROCESSOR:
+      return `processors/${planItem.fileName}`;
+    case CodeType.SENSOR:
+      return `sensors/${planItem.fileName}`;
+    default:
+      return '';
+  }
+}
+
 const { Sider, Content } = Layout;
 const { Step } = Steps;
 const { Title } = Typography;
@@ -489,22 +508,3 @@ const StepEditor = () => {
 };
 
 export default StepEditor;
-
-function getFileRelativePath(planItem: PlanItem) {
-  switch (planItem.type) {
-    case CodeType.START:
-      return planItem.fileName;
-    case CodeType.PLATFORM:
-      return `platforms/${planItem.fileName}`;
-    case CodeType.SCENARIO:
-      return `scenarios/${planItem.fileName}`;
-    case CodeType.WEAPON:
-      return `weapons/${planItem.fileName}`;
-    case CodeType.PROCESSOR:
-      return `processors/${planItem.fileName}`;
-    case CodeType.SENSOR:
-      return `sensors/${planItem.fileName}`;
-    default:
-      return '';
-  }
-}
