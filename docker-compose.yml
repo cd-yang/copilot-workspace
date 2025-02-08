@@ -1,0 +1,28 @@
+version: '3'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "12321:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # ports:
+    #   - "12322:5000"
+    # ports:
+    #   - "15000:15000"
+
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
