@@ -1,0 +1,25 @@
+services:
+  frontend:
+    # build:
+    #   context: ./frontend
+    #   dockerfile: Dockerfile
+    image: harbor.se.local/afsim/copilot-workspace-frontend:latest
+    ports:
+      - "12321:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    image: harbor.se.local/afsim/copilot-workspace-backend:latest
+    # build:
+    #   context: ./backend
+    #   dockerfile: Dockerfile
+
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
