@@ -1,5 +1,6 @@
 import json
 import time
+import logging
 from typing import List
 
 from ollama import Client
@@ -19,10 +20,16 @@ USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
 MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
     """
     使用 qwen2.5-coder 模型，对文本进行推理
     """
+    logging.info("Starting make_reasoning_call function")
+    logging.info(f"API request: {messages}")
+
     for attempt in range(3):
         try:
             response = ollama_client.chat(
@@ -33,19 +40,16 @@ def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
                          },
                 format='json',
             )
-            # print('ollama response:', response)
-
-            # 尝试处理 qwen2.5:72b 模型返回的 content 包含的 unicode 字符错误，但是似乎没有效果，先不使用 qwen2.5:72b 模型
-            # response_content = response['message']['content']
-            # response_content = response_content.encode('utf-8').decode('unicode_escape')
-            # return json.loads(response_content)
+            logging.info(f"API response: {response}")
 
             return json.loads(response['message']['content'])
         except Exception as e:
-            print('********** Exception start *********', f"Error: {str(e)}\n")
+            logging.error(f"Exception occurred: {str(e)}")
             if attempt == 2:
                 if is_final_answer:
                     return {"title": "Error", "content": f"Failed to generate final answer after 3 attempts. Error: {str(e)}"}
                 else:
                     return {"title": "Error", "content": f"Failed to generate step after 3 attempts. Error: {str(e)}", "next_action": "final_answer"}
             time.sleep(1)  # Wait for 1 second before retrying
+
+    logging.info("Ending make_reasoning_call function")
