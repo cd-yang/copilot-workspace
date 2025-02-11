@@ -1,8 +1,8 @@
 import json
 import time
-import logging
 from typing import List
 
+from loguru import logger
 from ollama import Client
 
 ollama_client = Client(
@@ -20,15 +20,15 @@ USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
 MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure loguru
+logger.add("file_{time}.log", level="INFO", format="{time} - {level} - {message}")
 
 def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
     """
     使用 qwen2.5-coder 模型，对文本进行推理
     """
-    logging.info("Starting make_reasoning_call function")
-    logging.info(f"API request: {messages}")
+    logger.info("Starting make_reasoning_call function")
+    logger.info(f"API request: {messages}")
 
     for attempt in range(3):
         try:
@@ -40,11 +40,11 @@ def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
                          },
                 format='json',
             )
-            logging.info(f"API response: {response}")
+            logger.info(f"API response: {response}")
 
             return json.loads(response['message']['content'])
         except Exception as e:
-            logging.error(f"Exception occurred: {str(e)}")
+            logger.error(f"Exception occurred: {str(e)}")
             if attempt == 2:
                 if is_final_answer:
                     return {"title": "Error", "content": f"Failed to generate final answer after 3 attempts. Error: {str(e)}"}
@@ -52,4 +52,4 @@ def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
                     return {"title": "Error", "content": f"Failed to generate step after 3 attempts. Error: {str(e)}", "next_action": "final_answer"}
             time.sleep(1)  # Wait for 1 second before retrying
 
-    logging.info("Ending make_reasoning_call function")
+    logger.info("Ending make_reasoning_call function")
