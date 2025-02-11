@@ -1,5 +1,6 @@
 import json
 import time
+import logging
 
 from ollama_api import make_reasoning_call
 
@@ -7,7 +8,11 @@ USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
 MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 def generate_task_response(prompt):
+    logging.info("Starting generate_task_response function")
     if INCLUDE_AFSIM_BACKGROUND:
         system_info = """AFSIM是一个通用的建模框架，由美国空军研究实验室（AFRL）开发和维护1。它的主要目的是用于模拟和分析作战环境，帮助用户评估军事战略和战术决策的有效性。
 具体来说，AFSIM提供了完整的仿真环境，包括：
@@ -55,8 +60,13 @@ Example of a valid JSON response:
     total_thinking_time = 0
     
     while True:
+        logging.info(f"Starting step {step_count} in generate_task_response function")
         start_time = time.time()
-        step_data = make_reasoning_call(messages, 300)
+        try:
+            step_data = make_reasoning_call(messages, 300)
+        except Exception as e:
+            logging.error(f"Exception occurred in generate_task_response function: {str(e)}")
+            raise e
         end_time = time.time()
         thinking_time = end_time - start_time
         total_thinking_time += thinking_time
@@ -64,9 +74,8 @@ Example of a valid JSON response:
         if 'title' not in step_data:
             step_data['title'] = "..."
         if 'content' not in step_data:
-            print(time.time(), '未生成有效 content，重试...')  # Retry if no valid content generated
+            logging.warning('未生成有效 content，重试...')
             continue
-        # steps.append((f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time))
         
         messages.append({"role": "assistant", "content": json.dumps(step_data)})
         
@@ -75,23 +84,24 @@ Example of a valid JSON response:
         
         step_count += 1
 
-        # Yield after each step for Streamlit to update
-        # yield steps, None  # We're not yielding the total time until the end
+        logging.info(f"Completed step {step_count} in generate_task_response function")
         yield f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time, None
 
-    # Generate final answer
     if USE_CHINESE_PROMPT:
         messages.append({"role": "user", "content": "请根据上述推理提供最终答案"})
     else:
         messages.append({"role": "user", "content": "Please provide the final answer based on your reasoning above."})
     
+    logging.info("Generating final answer in generate_task_response function")
     start_time = time.time()
-    final_data = make_reasoning_call(messages, 200, is_final_answer=True)
+    try:
+        final_data = make_reasoning_call(messages, 200, is_final_answer=True)
+    except Exception as e:
+        logging.error(f"Exception occurred in generate_task_response function while generating final answer: {str(e)}")
+        raise e
     end_time = time.time()
     thinking_time = end_time - start_time
     total_thinking_time += thinking_time
     
-    # steps.append(("Final Answer", final_data['content'], thinking_time))
-
-    # yield steps, total_thinking_time
+    logging.info("Completed generate_task_response function")
     yield f"Final Answer: {final_data['title']}", final_data['content'], thinking_time, total_thinking_time
