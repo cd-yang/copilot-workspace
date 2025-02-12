@@ -77,7 +77,7 @@ def generate_code_plan(origin_requirement: str, task_details: List[str]):
     logger.info("Starting generate_code_plan function")
     if not task_details:
         logger.error("未获取到参数 task_details")
-        return
+        # return
     
     for code_plan in generate_code_from_task(origin_requirement, task_details):
         code_plans.append(code_plan)

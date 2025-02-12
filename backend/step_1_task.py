@@ -1,15 +1,13 @@
 import json
 import time
+
 from loguru import logger
 
 from ollama_api import make_reasoning_call
 
 USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
-MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
-
-# Configure loguru
-logger.add("file_{time}.log", level="INFO", format="{time} - {level} - {message}")
+MAX_STEP_COUNT = 2 # Max steps to prevent infinite thinking time. Can be adjusted.
 
 def generate_task_response(prompt):
     logger.info("Starting generate_task_response function")
@@ -56,7 +54,7 @@ Example of a valid JSON response:
         ]
     
     # steps = []
-    step_count = 0
+    step_count = 1
     total_thinking_time = 0
     
     while True:
@@ -79,7 +77,7 @@ Example of a valid JSON response:
         
         messages.append({"role": "assistant", "content": json.dumps(step_data)})
         
-        if step_data['next_action'] == 'final_answer' or step_count > MAX_STEP_COUNT:
+        if step_data['next_action'] == 'final_answer' or step_count >= MAX_STEP_COUNT:
             break
         
         step_count += 1

@@ -7,21 +7,14 @@ from ollama import Client
 
 ollama_client = Client(
     host='http://192.168.100.231:11434',
-    # host='http://192.168.100.201:11434',
+    # host='http://192.168.100.202:11434',
 )
-# model="qwen2.5:72b"
-# model="qwen2.5:32b"
 model="qwen2.5-coder:32b"
-# model="qwen2.5-coder:32b-instruct-fp16"
-# model="qwq:32b-preview-fp16"
-# model="qwq:32b"
+# model="deepseek-r1:14b"
 
 USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
 MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
-
-# Configure loguru
-logger.add("file_{time}.log", level="INFO", format="{time} - {level} - {message}")
 
 def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
     """

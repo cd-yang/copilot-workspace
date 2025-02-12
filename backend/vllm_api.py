@@ -6,10 +6,10 @@ from langchain_core.messages.base import BaseMessage
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
-    model="afsim-3b",
+    model="afsim-3b-bf16",
     openai_api_key="EMPTY",
-    openai_api_base="http://192.168.100.231:8000/v1",
-    # max_tokens=5,
+    openai_api_base="http://192.168.100.202:8000/v1",
+    max_tokens=2000,
     temperature=0.2,
 )
 

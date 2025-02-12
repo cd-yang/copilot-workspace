@@ -1,13 +1,11 @@
-from loguru import logger
 from enum import Enum
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from loguru import logger
 
 from ollama_api import make_reasoning_call
 from vllm_api import make_code_gen_call
 
-# Configure loguru
-logger.add("file_{time}.log", level="INFO", format="{time} - {level} - {message}")
 
 class CodeType(Enum):
     START = "start"
