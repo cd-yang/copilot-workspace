@@ -13,9 +13,12 @@ services:
 
   backend:
     image: harbor.se.local/afsim/copilot-workspace-backend:latest
-    # build:
-    #   context: ./backend
-    #   dockerfile: Dockerfile
+
+    environment:
+      - REASONING_MODEL_PATH=http://192.168.100.231:11434
+      - REASONING_MODEL_NAME=qwen2.5-coder:32b
+      - CODE_MODEL_PATH=http://192.168.100.201:8000/v1
+      - CODE_MODEL_NAME=afsim-3b-bf16
 
     networks:
       - app-network
