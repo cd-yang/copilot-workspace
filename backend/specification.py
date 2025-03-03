@@ -1,5 +1,6 @@
 import threading
 import time
+import logging
 from typing import List
 
 from flask import Flask, jsonify, make_response, request

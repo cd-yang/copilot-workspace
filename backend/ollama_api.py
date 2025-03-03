@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import logging
 from typing import List
 
 from loguru import logger
@@ -18,6 +19,9 @@ ollama_client = Client(
 USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
 MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
     """
@@ -41,6 +45,7 @@ def make_reasoning_call(messages: List, max_tokens=300, is_final_answer=False):
             return json.loads(response['message']['content'])
         except Exception as e:
             logger.error(f"Exception occurred: {str(e)}")
+
             if attempt == 2:
                 if is_final_answer:
                     return {"title": "Error", "content": f"Failed to generate final answer after 3 attempts. Error: {str(e)}"}

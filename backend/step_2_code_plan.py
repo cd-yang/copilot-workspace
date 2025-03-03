@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -6,6 +7,8 @@ from loguru import logger
 from ollama_api import make_reasoning_call
 from vllm_api import make_code_gen_call
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class CodeType(Enum):
     START = "start"

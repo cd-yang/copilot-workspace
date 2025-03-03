@@ -1,5 +1,6 @@
 import json
 import time
+import logging
 
 from loguru import logger
 
@@ -8,6 +9,9 @@ from ollama_api import make_reasoning_call
 USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
 MAX_STEP_COUNT = 2 # Max steps to prevent infinite thinking time. Can be adjusted.
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def generate_task_response(prompt):
     logger.info("Starting generate_task_response function")
