@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from loguru import logger
 
 from ollama_api import make_reasoning_call
 from vllm_api import make_code_gen_call
@@ -18,7 +19,7 @@ class CodeType(Enum):
     SENSOR = "sensor"
 
 def generate_code_from_task(origin_requirement, task_details):
-    logging.info("Starting generate_code_from_task function")
+    logger.info("Starting generate_code_from_task function")
     # step 1: 提取出 platform
     platforms = make_reasoning_call([
          {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出有多少的武器或者装备（包括但不限于飞机、舰船、导弹、卫星、车）
@@ -33,12 +34,12 @@ def generate_code_from_task(origin_requirement, task_details):
     platforms = platforms.get("platforms", [])
     # if platforms contains space, replace it with underscore
     platforms = [platform.replace(" ", "_") for platform in platforms]
-    logging.info(f"提取到 platforms: {platforms}")
+    logger.info(f"提取到 platforms: {platforms}")
 
     # step 2: 生成 platforms 代码
     # todo: 补充装备数据： 简氏数据库/源启数据库
     for platform in platforms:
-        logging.info(f"Starting code generation for platform: {platform}")
+        logger.info(f"Starting code generation for platform: {platform}")
         # 先提炼场景内容
         platform_scenario = make_reasoning_call([
             {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式从当前场景的描述中提取出平台的相关描述
@@ -56,7 +57,7 @@ def generate_code_from_task(origin_requirement, task_details):
     """}
             ])
         platform_scenario = platform_scenario.get("platform_scenario", "")
-        logging.info(f"提取到 platform_scenario: {platform_scenario}")
+        logger.info(f"提取到 platform_scenario: {platform_scenario}")
 
         try:
             code = make_code_gen_call([
@@ -76,7 +77,7 @@ complete the code for the platform_type {platform}"""
                 "isLastFile": False
             }
         except Exception as e:
-            logging.error(f"Exception occurred while generating code for platform {platform}: {str(e)}")
+            logger.error(f"Exception occurred while generating code for platform {platform}: {str(e)}")
             raise e
     
     # step 3: 生成 scenario 代码
@@ -98,7 +99,7 @@ complete the code for the platform_type {platform}"""
 """}
         ])
     scenario = scenario.get("scenario", "")
-    logging.info(f"提取到 scenario: {scenario}")
+    logger.info(f"提取到 scenario: {scenario}")
 
     try:
         code = make_code_gen_call([
@@ -126,7 +127,7 @@ do not generate any platform_type code, just the platform code.
             "isLastFile": False
         }
     except Exception as e:
-        logging.error(f"Exception occurred while generating scenario code: {str(e)}")
+        logger.error(f"Exception occurred while generating scenario code: {str(e)}")
         raise e
 
     # step 4: 生成 start.txt 代码
@@ -142,7 +143,7 @@ end_time 1 hr
         "type": CodeType.START.value,
         "isLastFile": True
     }
-    logging.info("Ending generate_code_from_task function")
+    logger.info("Ending generate_code_from_task function")
 
 if __name__ == "__main__":
     test_scenario = """当时，该苏-34战机正处于马里乌波尔以北，执行夜间滑翔制导炸弹投掷任务，航向大致朝北。录音开头，苏-34战机即接到地面预警雷达引导员的紧急指令：“爱国者”导弹已向你发射，共计3枚，立即撤离，放弃投弹任务！此时，苏-34尚未释放炸弹，且距离目标超过70公里，也即是俄军滑翔炸弹的最远射程。

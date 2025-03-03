@@ -2,17 +2,19 @@ import json
 import time
 import logging
 
+from loguru import logger
+
 from ollama_api import make_reasoning_call
 
 USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
-MAX_STEP_COUNT = 5 # Max steps to prevent infinite thinking time. Can be adjusted.
+MAX_STEP_COUNT = 2 # Max steps to prevent infinite thinking time. Can be adjusted.
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def generate_task_response(prompt):
-    logging.info("Starting generate_task_response function")
+    logger.info("Starting generate_task_response function")
     if INCLUDE_AFSIM_BACKGROUND:
         system_info = """AFSIM是一个通用的建模框架，由美国空军研究实验室（AFRL）开发和维护1。它的主要目的是用于模拟和分析作战环境，帮助用户评估军事战略和战术决策的有效性。
 具体来说，AFSIM提供了完整的仿真环境，包括：
@@ -56,16 +58,16 @@ Example of a valid JSON response:
         ]
     
     # steps = []
-    step_count = 0
+    step_count = 1
     total_thinking_time = 0
     
     while True:
-        logging.info(f"Starting step {step_count} in generate_task_response function")
+        logger.info(f"Starting step {step_count} in generate_task_response function")
         start_time = time.time()
         try:
             step_data = make_reasoning_call(messages, 300)
         except Exception as e:
-            logging.error(f"Exception occurred in generate_task_response function: {str(e)}")
+            logger.error(f"Exception occurred in generate_task_response function: {str(e)}")
             raise e
         end_time = time.time()
         thinking_time = end_time - start_time
@@ -74,17 +76,17 @@ Example of a valid JSON response:
         if 'title' not in step_data:
             step_data['title'] = "..."
         if 'content' not in step_data:
-            logging.warning('未生成有效 content，重试...')
+            logger.warning('未生成有效 content，重试...')
             continue
         
         messages.append({"role": "assistant", "content": json.dumps(step_data)})
         
-        if step_data['next_action'] == 'final_answer' or step_count > MAX_STEP_COUNT:
+        if step_data['next_action'] == 'final_answer' or step_count >= MAX_STEP_COUNT:
             break
         
         step_count += 1
 
-        logging.info(f"Completed step {step_count} in generate_task_response function")
+        logger.info(f"Completed step {step_count} in generate_task_response function")
         yield f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time, None
 
     if USE_CHINESE_PROMPT:
@@ -92,16 +94,16 @@ Example of a valid JSON response:
     else:
         messages.append({"role": "user", "content": "Please provide the final answer based on your reasoning above."})
     
-    logging.info("Generating final answer in generate_task_response function")
+    logger.info("Generating final answer in generate_task_response function")
     start_time = time.time()
     try:
         final_data = make_reasoning_call(messages, 200, is_final_answer=True)
     except Exception as e:
-        logging.error(f"Exception occurred in generate_task_response function while generating final answer: {str(e)}")
+        logger.error(f"Exception occurred in generate_task_response function while generating final answer: {str(e)}")
         raise e
     end_time = time.time()
     thinking_time = end_time - start_time
     total_thinking_time += thinking_time
     
-    logging.info("Completed generate_task_response function")
+    logger.info("Completed generate_task_response function")
     yield f"Final Answer: {final_data['title']}", final_data['content'], thinking_time, total_thinking_time

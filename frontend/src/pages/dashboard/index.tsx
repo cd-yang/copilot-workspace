@@ -276,7 +276,7 @@ const StepEditor = () => {
     } else {
       // setCurrentStep((prev) => prev + 1);
     }
-  }, [issue, specifications]);
+  }, [issue, specifications, currentStep]);
 
   const handleConfirm = useCallback(async () => {
     const zip = new JSZip();
@@ -441,7 +441,9 @@ const StepEditor = () => {
         <Steps
           direction="vertical"
           current={currentStep}
-          onChange={setCurrentStep} // 自动接收点击步骤的索引并更新 currentStep 状态
+          onChange={e => {
+            setCurrentStep(e);
+          }} // 自动接收点击步骤的索引并更新 currentStep 状态
           style={{ height: '50vh' }}
         >
           {steps.map((step, index) => (
