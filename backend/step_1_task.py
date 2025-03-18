@@ -1,17 +1,19 @@
 import json
-import time
 import logging
+import time
 
+from llm_provider import make_reasoning_call
 from loguru import logger
-
-from ollama_api import make_reasoning_call
 
 USE_CHINESE_PROMPT = True
 INCLUDE_AFSIM_BACKGROUND = True
-MAX_STEP_COUNT = 2 # Max steps to prevent infinite thinking time. Can be adjusted.
+# Max steps to prevent infinite thinking time. Can be adjusted.
+MAX_STEP_COUNT = 2
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def generate_task_response(prompt):
     logger.info("Starting generate_task_response function")
@@ -38,8 +40,8 @@ def generate_task_response(prompt):
 "next_action"："continue"
 }```
 """},
-        {"role": "user", "content": prompt},
-        {"role": "assistant", "content": "谢谢！我现在会按照我的指示一步一步思考，在分解问题之后从头开始。"}
+            {"role": "user", "content": prompt},
+            {"role": "assistant", "content": "谢谢！我现在会按照我的指示一步一步思考，在分解问题之后从头开始。"}
         ]
     else:
         messages = [
@@ -56,18 +58,20 @@ Example of a valid JSON response:
             {"role": "user", "content": prompt},
             {"role": "assistant", "content": "Thank you! I will now think step by step following my instructions, starting at the beginning after decomposing the problem."}
         ]
-    
+
     # steps = []
     step_count = 1
     total_thinking_time = 0
-    
+
     while True:
-        logger.info(f"Starting step {step_count} in generate_task_response function")
+        logger.info(
+            f"Starting step {step_count} in generate_task_response function")
         start_time = time.time()
         try:
             step_data = make_reasoning_call(messages, 300)
         except Exception as e:
-            logger.error(f"Exception occurred in generate_task_response function: {str(e)}")
+            logger.error(
+                f"Exception occurred in generate_task_response function: {str(e)}")
             raise e
         end_time = time.time()
         thinking_time = end_time - start_time
@@ -78,32 +82,36 @@ Example of a valid JSON response:
         if 'content' not in step_data:
             logger.warning('未生成有效 content，重试...')
             continue
-        
-        messages.append({"role": "assistant", "content": json.dumps(step_data)})
-        
+
+        messages.append(
+            {"role": "assistant", "content": json.dumps(step_data)})
+
         if step_data['next_action'] == 'final_answer' or step_count >= MAX_STEP_COUNT:
             break
-        
+
         step_count += 1
 
-        logger.info(f"Completed step {step_count} in generate_task_response function")
+        logger.info(
+            f"Completed step {step_count} in generate_task_response function")
         yield f"Step {step_count}: {step_data['title']}", step_data['content'], thinking_time, None
 
     if USE_CHINESE_PROMPT:
         messages.append({"role": "user", "content": "请根据上述推理提供最终答案"})
     else:
-        messages.append({"role": "user", "content": "Please provide the final answer based on your reasoning above."})
-    
+        messages.append(
+            {"role": "user", "content": "Please provide the final answer based on your reasoning above."})
+
     logger.info("Generating final answer in generate_task_response function")
     start_time = time.time()
     try:
         final_data = make_reasoning_call(messages, 200, is_final_answer=True)
     except Exception as e:
-        logger.error(f"Exception occurred in generate_task_response function while generating final answer: {str(e)}")
+        logger.error(
+            f"Exception occurred in generate_task_response function while generating final answer: {str(e)}")
         raise e
     end_time = time.time()
     thinking_time = end_time - start_time
     total_thinking_time += thinking_time
-    
+
     logger.info("Completed generate_task_response function")
     yield f"Final Answer: {final_data['title']}", final_data['content'], thinking_time, total_thinking_time

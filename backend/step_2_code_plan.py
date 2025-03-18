@@ -2,13 +2,13 @@ import logging
 from enum import Enum
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from llm_provider import make_code_gen_call, make_reasoning_call
 from loguru import logger
 
-from ollama_api import make_reasoning_call
-from vllm_api import make_code_gen_call
-
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 class CodeType(Enum):
     START = "start"
@@ -18,11 +18,12 @@ class CodeType(Enum):
     PROCESSOR = "processor"
     SENSOR = "sensor"
 
+
 def generate_code_from_task(origin_requirement, task_details):
     logger.info("Starting generate_code_from_task function")
     # step 1: 提取出 platform
     platforms = make_reasoning_call([
-         {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出有多少的武器或者装备（包括但不限于飞机、舰船、导弹、卫星、车）
+        {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出有多少的武器或者装备（包括但不限于飞机、舰船、导弹、卫星、车）
 有效 JSON 响应的示例：
 ```json
 {
@@ -30,7 +31,7 @@ def generate_code_from_task(origin_requirement, task_details):
 }```
 """},
         {"role": "user", "content": origin_requirement}
-        ])
+    ])
     platforms = platforms.get("platforms", [])
     # if platforms contains space, replace it with underscore
     platforms = [platform.replace(" ", "_") for platform in platforms]
@@ -55,20 +56,21 @@ def generate_code_from_task(origin_requirement, task_details):
     ```
     请提炼出场景中关于{platform} 的描述
     """}
-            ])
+        ])
         platform_scenario = platform_scenario.get("platform_scenario", "")
         logger.info(f"提取到 platform_scenario: {platform_scenario}")
 
         try:
             code = make_code_gen_call([
-                SystemMessage(f"""You are an expert AFSIM code assistant. Generate code for platform_type """),
+                SystemMessage(
+                    f"""You are an expert AFSIM code assistant. Generate code for platform_type """),
                 HumanMessage(f"""target platform_type: {platform}
 description:
 ```
 {platform_scenario}
 ```
 complete the code for the platform_type {platform}"""
-)
+                             )
             ])
             yield {
                 "fileName": f"{platform}.txt",
@@ -77,14 +79,15 @@ complete the code for the platform_type {platform}"""
                 "isLastFile": False
             }
         except Exception as e:
-            logger.error(f"Exception occurred while generating code for platform {platform}: {str(e)}")
+            logger.error(
+                f"Exception occurred while generating code for platform {platform}: {str(e)}")
             raise e
-    
+
     # step 3: 生成 scenario 代码
     # todo: 经纬度坐标通过接口查询，agent 计算经纬范围等
     # 先提炼场景内容
     scenario = make_reasoning_call([
-         {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出当前场景的描述
+        {"role": "system", "content": """You are an expert AFSIM code assistant. 以 JSON 格式提取出当前场景的描述
 有效 JSON 响应的示例：
 ```json
 {
@@ -97,7 +100,7 @@ complete the code for the platform_type {platform}"""
 ```
 场景中已知包含的平台有：{",".join(platforms)}
 """}
-        ])
+    ])
     scenario = scenario.get("scenario", "")
     logger.info(f"提取到 scenario: {scenario}")
 
@@ -116,7 +119,8 @@ do not generate any platform_type code, just the platform code.
 """)
         ])
 
-        platform_include_content = "\n".join([f"include_once platforms/{platform}.txt" for platform in platforms])
+        platform_include_content = "\n".join(
+            [f"include_once platforms/{platform}.txt" for platform in platforms])
         yield {
             "fileName": "scenario.txt",
             "content": f"""{platform_include_content}
@@ -127,7 +131,8 @@ do not generate any platform_type code, just the platform code.
             "isLastFile": False
         }
     except Exception as e:
-        logger.error(f"Exception occurred while generating scenario code: {str(e)}")
+        logger.error(
+            f"Exception occurred while generating scenario code: {str(e)}")
         raise e
 
     # step 4: 生成 start.txt 代码
@@ -144,6 +149,7 @@ end_time 1 hr
         "isLastFile": True
     }
     logger.info("Ending generate_code_from_task function")
+
 
 if __name__ == "__main__":
     test_scenario = """当时，该苏-34战机正处于马里乌波尔以北，执行夜间滑翔制导炸弹投掷任务，航向大致朝北。录音开头，苏-34战机即接到地面预警雷达引导员的紧急指令：“爱国者”导弹已向你发射，共计3枚，立即撤离，放弃投弹任务！此时，苏-34尚未释放炸弹，且距离目标超过70公里，也即是俄军滑翔炸弹的最远射程。

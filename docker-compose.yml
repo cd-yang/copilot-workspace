@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   frontend:
     build:
@@ -19,8 +19,10 @@ services:
     environment:
       - REASONING_MODEL_PATH=http://192.168.100.231:11434
       - REASONING_MODEL_NAME=qwen2.5-coder:32b
+      - REASONING_MODEL_PROVIDER=ollama
       - CODE_MODEL_PATH=http://192.168.100.201:8000/v1
-      - CODE_MODEL_NAME=afsim-3b-bf16
+      - CODE_MODEL_NAME=afsim-3b
+      - CODE_MODEL_PROVIDER=openai
 
     networks:
       - app-network
